@@ -1,0 +1,625 @@
+---
+title: "VIQ - Laboratorio 3"
+#author: "Marco Torchiano, Mecati Mariachiara"
+date: 8 Aprile 2021
+output:
+  html_document: default
+  pdf_document: 
+    keep_tex: yes
+---
+
+### Obiettivi
+
+1.  Apprendere le basi per la programmazione in R
+2.  Manipolare data set
+
+### Strumento
+
+R ed RStudio
+
+### Dataset
+
+Utilizziamo il dataset pubblico sugli omicidi tramite armi da fuoco negli USA per il 2010. Che è incluso nella libreria `dslabs` (da installare se non già presente) e da importare con la funzione `library()`.
+
+Per poter usare il dataset è necessario utilizzare il comando `data(murders)` che include nell'environment il data frame omonimo con tutti i dati.
+
+Le operazioni precedenti sono già compiute nel seguente *chunk*:
+
+```{r setup}
+if(! "dslabs" %in% installed.packages() ){
+  install.packages("dslabs")
+}
+library(dslabs)
+
+data(murders) # load the US murders dataset
+```
+
+Ulteriori informazioni possono essere ottenute (dopo aver importato il package) con il comando `? murders` o cercando `murders` nel pannello di help.
+
+
+È possibile creare un data frame anche indicando esplicitamente i valori delle diverse colonne, usando la funzione `data.frame()`:
+
+```{r dati temperature}
+temp <- c(35, 88, 42, 84, 81, 30)
+city <- c("Beijing", "Lagos", "Paris", 
+          "Rio de Janeiro", "San Juan", "Toronto")
+city_temps <- data.frame(name = city, temperature_F = temp)
+```
+
+
+
+### Procedura
+
+Per ogni parte di esercizio questo documento R-Markdown contiene un frammento (*chunk*) di codice R che deve essere completato secondo le indicazioni.
+
+Dopo aver scritto il codice R è possibile verificare il funzionamento cliccando sulla freccia verde in alto a sinistra del blocco.
+
+**Attenzione**: le varie parti degli esercizi possono dipendere da quelli precedenti e sicuramente dipendono dal blocco *setup* qui sopra che deve essere eseguito prima di tutti.
+
+In alternativa è possibile utilizzare il pulsante in alto nel pannello dell'editor: il comando esegue tutti i *chunk*, inserisce il risultato nel documento e genera il file HTML.
+
+
+## ESERCIZIO 1 - Uso dei data frame
+
+### Data frames
+
+I data frame (`data.frame`) sono lo strumento base in cui vengono memorizzati dati in formato tabulare provenienti da diverse fonti.
+
+Buona parte delle elaborazioni ed analisi partono da dati memorizzatin in data frame (o loro estensioni).
+
+Stampare la porzione iniziale del dataset utilizzando la funzione `head()`
+
+```{r testa del data frame}
+
+# TODO: inserire il codice per stampare la porzione iniziale del dataset
+head(city_temps)
+
+```
+
+È possibile accedere alle singole colonne del dataframe utilizzando l'operatore di accesso `$` (o in alternativa quello di estrazione `[[]]` ), entrambi restituiscono un vettore.
+
+```{r}
+murders
+```
+
+
+Si ottenga il contenuto della colonna *abb* utilizzando i due operatori.
+```{r accesso alle colonne}
+## TODO scrivere il codice per ottenere il contenuto della colonna *abb* utilizzando i due operatori.
+murders$abb
+murders[["abb"]]
+
+```
+
+Per capire quali i tipi di dato delle 5 colonne è possibile usare la funzione `class()` applicata alle singole colonne.
+
+```{r tipo colonne}
+# TODO: inserire il codice per ottenere il tipo delle colonne e poi avere il sommario del data.frame
+
+class(murders$abb)
+class(murders$state)
+class(murders$region)
+class(murders$population)
+class(murders$total)
+
+```
+
+La colonna *region* a differenza delle due precedenti ha come tipo `factor`.
+Dato un fattore è possibile conoscere i livelli (overro i possibili valori) tramite la funzione `levels()`.
+
+Si stampino i livelli della colonna *regione* ed il minimo e massimo del numero di omicidi (colonna *total*).
+
+```{r livelli, min e max}
+# TODO: stampare i livelli della colonna *regione* ed il minimo e massimo del numero di omicidi (colonna *total*).
+levels(murders$region)
+min(murders$total)
+max(murders$total)
+
+```
+
+Per effettuare il conteggio dei diversi valori di una colonna è possibile utilizzare la funzione `table()`
+
+Contare le frequnze dei diversi livelli della colonna *region*.
+
+```{r frequenze}
+# TODO: inserire il codice per calcolare le frequenze dei livelli di region
+table(murders$region)
+
+```
+
+Si contino le frequnze dei diversi livelli della colonna *region*, esprimendoli anche come proporzioni (somma = 1) e come percentuale (somma = 100%).
+
+```{r frequenze e proporzioni}
+# TODO: inserire il codice per calcolare le frequenze dei livelli di region ed esprimerli anche in percentuale.
+c <- table(murders$region)
+somma <- sum(c)
+prop <- c/somma
+perc <- prop*100
+print(prop)
+print(perc)
+
+```
+
+Per avere una visione d'insieme è possibile utilizzare la funzione `summary()` che stampa, oltre al tipo della colonna, alcune informazioni di riepilogo.
+
+```{r sommario }
+# TODO: inserire il codice per avere il sommario del data.frame murders
+summary(murders)
+```
+
+### Ordinamento
+
+Ordinare la *"variabile"* (o colonna) *population* dal valore più piccolo al più grande
+
+```{r ordinamento}
+# TODO: interire il codice necesario
+sort(murders$population) #aggiungo TRUE per il descescente
+
+```
+
+Ordinare i nomi degli stati *state* in base alla rispettiva popolazione, in ordine decrescente. Si dovrebbe ottenere un vettore con i prima posizione lo stato più popoloso, che è la California con 4 779 736 abitanti, ed in ultima posizione quello meno popoloso, che è il Wyoming con 563 626 abitanti.
+
+```{r ordinamento di un vettore}
+# TODO: interire il codice necesario
+or <- order( - murders$population)
+murders[or, c("state", "population")]
+
+```
+
+Ordinare l'intero data frame sulla base del numero di omicidi (*total*)
+
+```{r fata frame ordinato per totale omicdi }
+# TODO: interire il codice necesario
+or <- order(murders$total)
+murders[or,]
+```
+
+----
+
+## ESERCIZIO 2 - Operazioni sui data frame
+
+### Aritmetica tra vettori
+
+A partire dal data frame sulle temperature (`city_temps`), calcolare le temperature in Celsius a partire da quelle espresse in Fahrenheit.
+
+La formula di conversione è:
+
+$$ C = \frac{5}{9} \cdot ( F - 32  ) $$
+
+```{r conversione temperature}
+# TODO: interire il codice necesario
+celsius <- (5/9) * (city_temps$temperature_F -32)
+city_temps$temperature_C <- celsius
+city_temps
+```
+
+Usando la stessa conversione aggiungere una colonna al data frame delle temperature con le temperature in Celcius. Può essere utile un arrotondamento?
+
+Suggerimento: l'operatore di accesso permette anche di assegnare a nuove colonne.
+
+```{r temperature Celsius}
+# TODO: interire il codice necesario
+celsius <- (5/9) * (city_temps$temperature_F -32)
+city_temps$temperature_C <- celsius
+c <- round(city_temps$temperature_C, 3)
+city_temps$temperature_C <- c
+city_temps
+```
+
+
+Calcolare (ed aggiungere come nuova colonna *rate*) il tasso di omicidi ogni 100 000 persone nel data frame degli omicidi e mostrare il data frame aggiornato
+
+```{r tasso omicidi}
+# TODO: interire il codice necesario
+murders$rate <- round(((murders$total*100000)/murders$population), 2)
+murders
+```
+
+Qual'è la media del tasso di omicidi?
+
+```{r media tasso omicidi}
+# TODO: interire il codice necesario
+mean(murders$rate)
+```
+
+È possibile utilizzare la funzione `fivenum()` per calcolare la sintesi in 5 numeri (minimo, 1^o quartile, mediana, 3^o quartile, massimo) dei dati di una colonna. 
+Quali sono i 5 numeri che sintetizzano la collona *rate*?
+
+```{r fivenum tasso}
+# TODO: interire il codice necesario
+five <- fivenum(murders$rate)
+five
+```
+
+### Indicatori
+
+Quanti sono gli stati in cui il tasso di omicidi è minore è uguale al primo quartile (calcolato qui sopra)?
+
+```{r indicatori pochi omicidi}
+# TODO: interire il codice necesario
+minus <- which( murders$rate <= five[2] )
+print(length(minus))
+```
+
+Usando un vettore indicatore, selezionare la porzione del dataframe che corrisponde agli stati nel primo quartile per tasso di omicidi.
+
+```{r stati in Q1}
+# TODO: interire il codice necesario
+murders[minus,]
+```
+
+Riportare i dati relativi agli stati nella regione `"West"` che si trovano nel primo quartile per tasso di omicidi.
+
+Suggerimento: costruire un vettore indicatore combinando con operatori logici le due condizioni
+
+
+```{r esercizio 3 - 3.3}
+# TODO: interire il codice necesario
+minew <- which( murders$region == "West", TRUE )
+minus <- which( murders$rate <= five[2], TRUE )
+common <- 1
+t <- 1
+for( i in 1:length(minew) ){
+  for( j in 1:length(minus) )
+    if(minus[j] == minew[i]){
+      common[t] <- minew[i]
+      print(common[t])
+      t <- t+1
+      break
+    }
+}
+murders[common, ]
+```
+```{r}
+minew2 <- murders[which(murders$region == "West" & murders$rate <= five[2], TRUE),]
+minew2
+```
+
+Usare l'operatore `%in%`per creare un vettore indicatore che indentifichi gli stati che hanno come abbreviazionie MA, ME, MI, MO, MU. E calcolare il numero di stati identificati.
+
+```{r stati con abbreviazioni}
+# TODO: interire il codice necesario
+states <- murders$abb %in% c("MA", "ME", "MI", "MO", "MU")
+length(murders$state[states])
+```
+
+Usare lo stesso operatore per capire quali tra le abbreviazioni corrispondono ad abbreviazioni reali e riportarne l'elenco.
+
+```{r abbreviazioni reali}
+# TODO: interire il codice necesario
+murders$abb[states]
+
+```
+
+
+## Fattori
+
+La funzione `cut()` permette di suddividere valori numerici in intervalli (dati gli estremi, inferiore escluso) ed associare un valore a ciuscun intervallo. Il risultato è un vettore di *factor*.
+
+```{r esempio cut}
+## Esempio di uso di cut()
+x <- runif(50,1,31) # 50 numeri casuali tra 0 e 31
+rating <- cut(x, c(0,18,30,31),c("Ins","Suff","Lode"))
+names(x) <- rating
+x
+```
+
+Associare al tasso di omicidi un livello (basso, medio, alto) corrispondente agli intervalli (0,1], (1,3], (3,20], e aggingere tale classificazione come nuova colonna *rating*.
+
+```{r classificazione tasso}
+# TODO: interire il codice necesario
+murders$rating <- cut(murders$rate, c(0,1,3,20), c("Basso", "Medio", "Alto"))
+murders
+```
+
+Calcolare le frequenze dei diversi rating:
+
+```{r freq rating}
+# TODO: interire il codice necesario
+Freq <- table(murders$rating)
+Freq
+```
+
+----
+
+## ESERCIZIO 3 - Funzioni
+
+### Temperature
+
+La formula per convertire una temperatura Fahrenheit in un Celsius è:
+
+$$ C = \frac{5}{9} \cdot ( F - 32  ) $$
+
+Scrivere la funzione `f_to_c()` che riceve una temperature °F e la converte in °C.
+
+```{r F to C}
+# TODO: interire il codice necesario
+f_to_c <- function(f){
+  c <- (5/9)*(f-32)
+  return (c)
+}
+```
+
+Verifica:
+
+```{r verifica f_to_c}
+if( exists("f_to_c") ){
+  print( f_to_c(61) )
+}
+```
+
+La funzione è vettorizzata? Ovvero funziona se applicata ad un vettore invece che ad una singolo valore? Se non lo è modificarla in modo che lo sia.
+
+Verifica:
+
+```{r verifica f_to_c vettorizzata}
+temperature <- c(82,61,32)
+if( exists("f_to_c") ){
+  print( f_to_c( temperature ) )
+}
+```
+
+Scrivere la funzione `c_to_f()` che faccia la conversione inversa.
+
+```{r C to F}
+# TODO: interire il codice necesario
+c_to_f <- function(c){
+  f <- (9/5)*c + 32
+  return (f)
+}
+```
+
+Verifica:
+
+```{r verifica c_to_f}
+temperature <- c(28,16,0)
+if( exists("c_to_f") ){
+  print( c_to_f( temperature ) )
+  
+  print( f_to_c( c_to_f( temperature ) ) )
+}
+```
+
+Scrivere una funzione `temp_conv()` che riceve due parametri (opzionali) `f` e `c` che contengono i valori delle temperature rispettivamente in °F e °C e partendo dal valore fornito calcoli e stampi quello mancante.
+
+Suggerimento: utilizzare dei valori di default `NA` per poter facilmente rilevare quale parametro non è passato.
+
+```{r funzione conversione temperature}
+# TODO: interire il codice necesario
+temp_conv <- function(c=NA, f=NA){
+  if(all(is.na(c))){
+    return (f_to_c(f))
+  }
+  if(is.na(f)){
+    return (c_to_f(c))
+  }
+}
+```
+
+Verifica:
+
+```{r verifica conversione temperature}
+if(exists("temp_conv")){
+  print(temp_conv( f=c(82)))
+  print(temp_conv( c=c(28))) 
+}
+```
+
+Anche questa funzione è vettorizzata?
+
+Suggerimento: quando si fa un test su un vettore viene utilizzato un solo elemento e questo causa un *warning*. Per risolvere il problema è possibile fare il test su un solo elemento (ad es. il primo) oppure verificare che il test risulti vero su tutti gli elementi (funzione `all()`)
+
+Verifica:
+
+```{r verifica conversione temperature vettorizzata}
+if(exists("temp_conv")){
+  print(temp_conv( f=c(82,61,32)))
+  print(temp_conv( c=c(28,16,0)))
+}
+```
+
+
+## Fibonacci
+
+La successione di Fibonacci è definita come:
+
+$$ \begin{cases} F_0 = 1 \\ F_1 = 1 \\ F_n= F_{n-1} - F_{n-2} & \forall n:n \ge 2 \end{cases} $$
+
+Scrivere una funzione successione_Fibonacci in grado, dato il parametro *n*, di restituire i primi n+1 numeri della serie come array. Esempio:
+se n=7, allora la funzione restituisce il vettore `[1, 1, 2, 3, 5, 8, 13, 21]`
+
+```{r fibonacci iterativa}
+# TODO: interire il codice necesario
+fibonacci <- function(n){
+  fib <- 1:n
+  fib[1] <- 1
+  fib[2] <- 1
+  for(i in 3:n ){
+    fib[i] <- fib[i-1] + fib[i-2]
+  }
+  return (fib)
+}
+```
+
+Verifica:
+
+```{r verifica funzione}
+# specificare un intero n:
+n <- 7
+if( exists("fibonacci") ){
+  print( fibonacci(n) )
+}
+```
+
+È possibile fare una soluzione iterativa (basata su un ciclo che ad ogni iterazione calcola un nuovo elemento), oppure una ricorsiva che richiama se stessa per calcolare i valori precedenti.
+
+Provare a sviluppare entrambe.
+
+Versione ricorsiva
+
+```{r fibonacci ricorsiva}
+# TODO: interire il codice necessario
+successione_Fibonacci <- function(n, fib = NA){
+  if(all(is.na(fib))){
+    fib <- 1:n
+  }
+  if(n == 1 | n == 2){
+    fib[n] <- 1
+    return (fib)
+  }
+  
+  fib <- successione_Fibonacci(n-1, fib)
+  fib <- successione_Fibonacci(n-2, fib)
+  
+  fib[n] <- fib[n-1] + fib[n-2]
+  return (fib)
+  
+}
+```
+
+Verifica:
+
+```{r verifica funzione 2}
+# specificare un intero n:
+n <- 7
+if( exists("successione_Fibonacci") ){
+  print( successione_Fibonacci(n) )
+}
+```
+
+
+----
+
+# ESERCIZIO 4 - Grafici di base
+
+Utilizzare la funzione `plot()` per costruire un grafico a dispersione (scatterplot) che mostri la correlazione tra la popolazione ed il numero di omicidi
+
+```{r scatter }
+# TODO: interire il codice necesario
+plot(murders$population, murders$total)
+```
+
+Utilizzare la funzione `plot()` passando una formula (`~`) invece delle due colonne.
+
+```{r scatter formula }
+# TODO: interire il codice necesario
+plot(population ~ total, data = murders, type = "l", col = "red")
+```
+
+Utilizzare una scala logaritmica sui due assi in modo da distanziare tutti gli stati con popolazione molto bassa.
+
+Suggerimento: è possibile utilizzare il parametro `log` descritto come
+
+> a character string which contains "x" if the x axis is to be logarithmic, "y" if the y axis is to be logarithmic and "xy" or "yx" if both axes are to be logarithmic.
+
+```{r scatter log}
+# TODO: interire il codice necesario
+#plot(log(murders$population, base = exp(100)), murders$total)
+plot(murders$population, murders$total, log="x")
+```
+
+Nota: il parametro `log` è descritto nel manuale della funzione `plot.default` che è richiamata da `plot`.
+
+
+## Istogrammi
+
+Usare la funzione `hist()` per costruire un istogramma del tasso di omicidi.
+
+```{r istogramma tasso}
+# TODO: interire il codice necesario
+hist(murders$rate)
+```
+
+Utilizzare il parametro `breaks` che accetta un vettore con i limiti degli intervalli (*bin*) dell'istogramma in modo da utilizzare dei bin di ampiezza 1.
+
+Suggerimento: utilizzare l'operatore range (`:`) per costruire il vettore con i limiti
+
+```{r istogramma tasso bin 1}
+# TODO: interire il codice necesario
+bin <- 0:18
+bin
+hist(murders$rate, breaks = bin)
+```
+
+Come cambia l'istogramma se l'ampiezza dei *bin* è pari a 0.5?
+
+```{r istogramma tasso bin 0.5}
+# TODO: interire il codice necesario
+bin <- c(0.5:17.5, 0:18)
+bin
+hist(murders$rate, breaks = bin)
+```
+
+
+
+## Boxplots
+
+Utilizzare un boxplot per rappresentare la distribuzione dei tassi di omicidio.
+
+Suggerimento: si usi la funzione `boxplot()`, è possibile utilizzare il parametro `horizontal` per mostrare il boxplot in orizzontale.
+
+```{r boxplot}
+# TODO: interire il codice necesario
+boxplot(murders$rate, horizontal = TRUE)
+```
+
+Mostrare il confronto tra le distribuzioni dei tassi di omicidio nelle diverse regioni.
+
+Si usi la versione con la formula della funzione `boxplot()`
+
+```{r boxplot multipli}
+# TODO: interire il codice necesario
+boxplot(rate ~ region, data = murders)
+```
+
+Osservazione: le diverse regioni sono riportate secondo l'ordine dei livelli del tipo fattore: `levels(murders$region)`.
+
+È possibile cambiare l'ordinamento dei livelli di un fattore tramite la funzione `reorder()` che riceve come parametri:
+- un vettore di fattori (o che viene convertito in fattore)
+- un vettore di pari lunghezza i cui valori sono utilizzati per riordinare i livelli
+- una funzione (opzionale) per aggregare i valori che corrispondono allo stesso livello
+
+Ad esempio per ordinare le regioni in base alla popolazione totale:
+
+```{r reorder popolazione}
+murders
+reor <- reorder(murders$region, murders$population, sum)
+reor
+```
+
+La funzione `sum` viene utilizzata per calcolare un punteggio aggregato (*score*) che poi viene utilizzato per ri-ordinare i livelli
+
+Utilizzando la funzione `reorder()` si mostri un boxplot analogo a quello precedente ma con le regioni ordinate in base al valore medio (funzione `mean`) del tasso di omicidi.
+
+```{r boxplot multipli ordinati}
+# TODO: interire il codice necesario
+reor <- reorder(murders$region, murders$rate, mean)
+reor
+boxplot(murders$rate ~ reor)
+```
+
+## Diagrammi a barre
+
+Costruire un diagramma a barre, utilizzando la funzione `barplot()` che riporti il tasso di omicidi per i diversi stati (si usi l'abbreviazione).
+
+Suggerimento: si usi la versione con la formula ed impostare il parametro `horiz` a `TRUE` per avere le barre orizzontali ed il parametro `las` a 1 per avere le etichette orizzontali.
+
+NB: sono stati impostati i parametri `fig.width` e `fig.height` del chunk per garantire un corretto rapporto altezza/larghezza 
+
+```{r bar plot, fig.width=8, fig.height=12}
+# TODO: interire il codice necesario
+barplot(rate ~ state, data = murders, horiz = TRUE, las = 1)
+```
+
+Osservazione: le etichette (di tipo `character`) sono mostrate in ordine alfabetico con il primo elemento del nella posizione più prossima all'asse orizzontale (quindi in basso).
+
+Modificare il grafico precedente ordinando le barre per tasso decrescente dall'alto verso il basso.
+
+Suggerimento: la funzione `reorder()` trasforma in fattore il primo parametro se questo non lo è, poi riordina i fattori.
+
+```{r bar plot sorted, fig.width=8, fig.height=12}
+# TODO: interire il codice necesario
+reor2 <- reorder(murders$state, - murders$rate, sum)
+reor2
+barplot(murders$rate ~ reor2, horiz = TRUE, las = 1)
+```

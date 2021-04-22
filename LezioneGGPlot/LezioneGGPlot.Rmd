@@ -1,0 +1,134 @@
+---
+title: "LezionegGGPlot"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+url <- "http://www.arpa.piemonte.it/reporting/indicatori-on_line/componenti-ambientali/clima/clima_temperature-medie"
+file <- "TemeperatureARPA.xls"
+if( !file.exists(file) ){
+  download.file(url, file, mode="wb")
+}
+```
+
+```{r}
+d_temp <- read_xls(file, sheet = 2, skip=1, n_max = 8) %>%
+  select(-"media 1991 - 2015") %>%
+  pivot_longer("1990":"2019", names_to = "anno", values_to = "temp") %>%
+  mutate( anno = as.integer(anno))
+#in questo modo salto la prima e l'ultima riga che non contengono dati
+#conversione in formato tidy
+d_temp
+```
+
+##Visualizzazione
+
+```{r}
+ggplot(d_temp,                ## Dati
+       aes(x=anno, y=temp)) + ## Mapping estetico
+  geom_point()                ## Layer Grafico
+```
+
+## Modifica della scala
+
+```{r}
+ggplot(d_temp,                ## Dati
+       aes(x=anno, y=temp)) + ## Mapping estetico
+  scale_y_log10(limits=c(1,50)) +
+  geom_point()                ## Layer Grafico
+```
+
+## Aggiunta di una nuova estetica rispetto alla posizione
+
+```{r}
+ggplot(d_temp,                ## Dati
+       aes(x=anno, y=temp, color=Stazioni, shape = Stazioni)) + ## Mapping estetico
+  scale_y_log10(limits=c(1,50)) +
+  geom_point()                ## Layer Grafico
+```
+
+## Aggiunta di altri layer grafici
+
+```{r}
+ggplot(d_temp,                ## Dati
+       aes(x=anno, y=temp, color = Stazioni, group = Stazioni)) + ## Mapping estetico
+  scale_y_log10(limits=c(1,50)) +
+  geom_point()  +             ## Layer Grafico
+  geom_line()                 ## Se non ci fosse color non ci sarebbe un buon collegamento tra linee
+```
+
+```{r, fig.width=10, fig.height=6}
+ggplot(d_temp,                ## Dati
+       aes(x=factor(anno), y=temp)) + ## Mapping estetico
+  geom_boxplot()                ## Layer Grafico
+  ## Serve Factor per anno, perchè boxplot vuole una serie discreta di numeri
+```
+
+## Piccoli multipli ('facet')
+```{r}
+ggplot(d_temp,                ## Dati
+       aes(x=anno, y=temp)) + ## Mapping estetico
+  geom_point() +              ## Layer Grafico
+  geom_line() +
+  facet_wrap(~Stazioni)        ## Creo un grafico per ogni stazione
+```
+
+## Mostrare la media delle temperature anno per anno
+
+```{r}
+d_temp %>% group_by(anno) %>%
+  summarise(temp = mean(temp)) %>%
+ggplot(aes(x=anno, y=temp)) + ## Mapping estetico
+  geom_point()  +             ## Layer Grafico
+  geom_line()   +
+  theme_linedraw() +
+  theme_bw()
+```
+
+
+
+## Leggere i dati e realizzare grafici con coordinate polari, dove l'angolo è indicato dal mese e la distanza è indicata dalla temperatura
+
+```{r}
+d <- read_xls(file, sheet = 1, skip = 1, n_max = 2) %>% 
+  select(-1) %>%  ## Elimina la prima colonna (saltata già nella lettura ma piena di NaN)
+  rename(Tipo = 1) %>%  ## Da Temperatura Giornaliera a Tipo
+  pivot_longer(2:13, names_to = "mese", values_to = "temp") %>%
+  mutate(mese = as.factor(mese))
+
+  ggplot(d,
+         aes(x = mese, y = temp, color = temp)) +
+  geom_point() +
+  coord_polar()
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

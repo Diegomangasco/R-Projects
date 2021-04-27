@@ -1,0 +1,343 @@
+---
+title: "VIQ - Laboratorio 4"
+#author: "Marco Torchiano, Mecati Mariachiara"
+date: 2021-04-22
+output: html_notebook
+---
+
+### Obiettivi
+
+1.  Manipolare data set
+2.  Grafici essenziali
+
+### Strumento
+
+R ed RStudio, in particolare la libreria tidyverse: 
+
+```{r import delle librerie}
+library(tidyverse)
+library(magrittr)
+library(readxl)
+```
+
+### Dataset
+
+Utilizziamo il dataset pubblico sui dati di occupazione ISTAT con periodo di riferimento GENNAIO-FEBBRAIO 2021, pubblicati in data 06 APRILE 2021:
+
+https://www.istat.it/it/archivio/256254
+
+Scaricare il file `.xls` corrispondente al link **SERIE STORICHE**.
+
+```{r}
+url = 'https://www.istat.it/it/files//2021/04/202102_serie-storiche.xls'
+file = "202102_serie-storiche.xls"
+if( ! file.exists(file) ){
+  download.file(url,file,mode="wb")
+}
+```
+
+## Lettura
+
+Leggere dal primo foglio (`Tab1`) i principali indicatori (destagionalizzati).
+Attenzione alle righe iniziali che contengono descrizioni e non dati.
+
+Suggerimenti:
+
+- trattandosi di un file `.xls`, usare la funzione `read_xls()` 
+(analoga alla funzione `read_xlsx()`)
+- specificare il nome (o il numero del foglio)
+- passare come terzo paramentro 
+  - la porzione di dataset che si vuole analizzare, indicando le coordinate delle celle agli estremi della diagonale principale, tipo  `"B2:E10"`
+  - le righe iniziali da scartare
+
+```{r}
+## DA COMPLETARE
+d_occupazione <- read_xls(file, sheet = 1, skip=7)
+d_occupazione
+```
+
+Le colonne sono a gruppi di 6 e rappresentano rispettivamente *Tutti*, *Maschi* e *Femmine*.
+
+In ciascun gruppo le colonne rappresentano:
+
+- Anno di riferimento
+- Mese di riferimento
+- Tasso di attività
+- Tasso di occupazione
+- Tasso di disoccupazione generale
+- Tasso di disoccupazione giovanile (15-24 anni) (solo per *Tutti*)
+
+I nomi che ci si attende dovrebbero essere quelli costruiti nel seguente chunk
+
+```{r, tipo="suggerimento"}
+colonne <- rep(c("tutti","m","f"),each=6) %>%  ## ripete 6 volte ciascun prefisso
+          paste(                              ## concatenato con
+                rep(c("anno","mese",          ## ripete 3 volte le sei informazioni
+                      "attivita","occupazione",
+                      "disoccupazione",
+                      "disoccupazione.giovani"),3),
+                sep="_") # separatore di concatenazione
+colonne <- colonne[c(-12,-18)]
+colonne
+```
+
+Verificare (e porre rimedio) ai seguenti problemi:
+
+- i nomi delle colonne sono corretti e significativi?
+
+```{r}
+## DA COMPLETARE
+names(d_occupazione) <- colonne
+d_occupazione
+```
+
+- ci sono colonne inutili (vuote o ripetute) ?
+
+```{r}
+## DA COMPLETARE
+d_occupazione %<>% select(-m_anno, -m_mese, -f_anno, -f_mese) %<>% rename(anno = tutti_anno, mese = tutti_mese)
+```
+
+
+## Riassettare i dati (tidy)
+
+---
+
+#### Osservazione
+
+La funzione `fill()` permette di specificare delle colonne i cui valori `NA` vengono *riempiti* con l'ultimo valore precedente valido.
+
+```{r esempio fill}
+dfill = data.frame(caso=c("A",NA,NA,"B",NA),
+                   valore=c(14,13,5,4,12))
+dfill
+dfill %>% fill(caso)
+```
+
+---
+
+- ci sono delle colonne incomplete da riempire?
+
+```{r}
+## DA COMPLETARE
+d_occupazione %<>% fill("anno")
+d_occupazione
+```
+
+---
+
+#### Osservazione: 
+
+La funzione `pivot_longer()` è in grado di estrarre più nomi dalle colonne.
+Il modo più semplice è specificare un separatore (che permette di spezzare i nomi delle colonne) e fornire più colonne in cui saranno messi i rispettivi frammenti.
+
+```{r esempio pivot longer multiplo}
+dpl <- data.frame(
+  id = 1:4,
+  altezza_prima = c(2,5,3,8),
+  altezza_dopo = c(3,5,6,9),
+  larghezza_prima = c(12,22,15,15),
+  larghezza_dopo = c(13,21,16,18)
+)
+dpl
+dpl %<>% pivot_longer(2:5,names_sep="_",names_to=c("dim","tempo"))
+dpl
+```
+
+A volte tale separazione può portare a suddividere una stessa osservazione su più righe (ad esempio `dim` non è una variabile vera e propria), è quindi necessario applicare un `pivot_wider()` per ri-sistemare il data frame.
+
+```{r esempio wider dopo longer}
+dpl %<>% pivot_wider(names_from="dim", values_from="value")
+dpl
+```
+
+---
+
+- ci sono delle variabili distribuite su più colonne?
+- una volta ricongiunte, devono essere poi ridistribuite?
+
+```{r}
+## DA COMPLETARE
+d_occupazione %<>% 
+  pivot_longer("tutti_attivita":"f_disoccupazione", names_sep = "_",
+               names_to = c("Sesso", "Indicatore"),
+               values_to = "Valore") %>%
+  pivot_wider(names_from = "Indicatore", values_from = "Valore")
+d_occupazione
+```
+
+- ci sono delle colonne che dovrebbero avere un tipo diverso?
+  - quando si trasforma in fattore una stringa occorre fare attenzione:
+    - `factor()` ordina (in assenza di dettagli) i livelli in ordine alfabetico
+    - `as_factor()` ordina i livelli in ordine di apparizione nel dataset
+
+```{r}
+## DA COMPLETARE
+d_occupazione %<>% mutate(anno = as.integer(anno), 
+                          mese = as_factor(mese), 
+                          Sesso = as.factor(Sesso))
+d_occupazione
+```
+
+---
+
+#### Osservazione:
+
+Per poter rappresentare i dati in una serie storica è necessario raggruppare in un'unica variabile anno e mese, in modo che siano ordinati correttamente.
+
+Una possibilità è quella di trasformarli in una data, prendendo come data convenzionale il primo giorno del mese.
+
+Se i livelli della variabile (di tipo fattore) *mese* sono nell'ordine corretto (ovvero `"Gennaio", "Febbraio", ... "Dicembre"`), applicando la conversione `as.integer()` si otterranno i numeri `1, 2, ... 12`, infatti per default i livelli di un fattore sono numerati a partire da 1.
+
+---
+
+* costruire una colonna data per poter rappresentare più agevolmente le serie di dati.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %<>% mutate(data = as.Date(paste(anno, as.integer(mese), 1, sep = "-")))
+d_occupazione
+
+## Per calcolare l'ultimo giorno di un mese
+#ultimo_giorno <- function(anno, mese){
+  #as.Date(paste(anno + (mese==12), (mese%12)+1, 1, sep = "-"))-1
+#}
+```
+
+
+## Grafici
+
+Mostrare l'andamento del tasso di disoccupazione nel corso degli anni per Tutti (maschi+femmine).
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso == "tutti") %>% 
+  ggplot(aes(x = data, y = disoccupazione)) + geom_line()
+```
+
+
+Mostrare l'andamento del tasso di disoccupazione nel corso degli anni per Maschi e Femmine.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso!="tutti") %>%
+  ggplot(aes(x=data, y = disoccupazione, color = Sesso)) + 
+  geom_line() +
+  ggtitle("Disoccupazione") +
+  ylab("")
+```
+
+
+Mostrare il tasso di occupazione di Maschi e Femmine.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso != "tutti") %>%
+  ggplot(aes(x = data, y = occupazione, color = Sesso)) +
+  geom_line() +
+  ggtitle("Occupazione") +
+  ylab("")
+```
+
+
+Mostrare il tasso di disoccupazione giovanile (c'è solo per Tutti e non diviso per sesso).
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso == "tutti") %>%
+  ggplot(aes(x = data, y = disoccupazione.giovani)) +
+  geom_line() +
+  ggtitle("Disoccupazione giovanile") +
+  ylab("")
+```
+
+Mostrare la media per ciasun anno del tasso di occupazione di Maschi e Femmine.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso != "tutti") %>%
+  group_by(Sesso, anno) %>%
+  summarise(occupazione = mean(occupazione), data = first(data), .groups = "drop") %>%
+  ggplot(aes(x = data, y = occupazione, color = Sesso)) +
+  geom_line()
+## .groups = "drop" scarta i raggruppamenti fatti prima
+```
+
+
+Mostrare il tasso di disoccupazione (per Tutti, maschi+femmine) dei diversi anni in funzione del mese, in ascissa i mesi, ed in ordinata il tasso di disoccupazione. Il grafico deve mostrare tante linee, una per ogni anno presente nei dati.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso == "tutti") %>%
+  ggplot(aes(x = mese, y = disoccupazione, group = anno)) +
+  geom_line() +
+  theme_minimal()
+```
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso == "tutti") %>%
+  ggplot(aes(x = as.integer(mese), y = disoccupazione, group = anno)) +
+  geom_line() +
+  facet_wrap(~anno)+
+  theme_minimal()
+```
+
+---
+
+#### Osservazione
+
+A volte è utile riportare tanti andamenti ma evidenziarne uno in particolare con un colore diverso.
+
+- è possibile utilizzare una variabile booleana `TRUE` per la serie da evidenziare e `FALSE` altrimenti, da mappare sull'estetica `color` (ed eventualmente size)
+- per scegliere i colori (diversi dalla scala automatica) è possibile utilizzare la funzione `scale_color_manual()` che accetta il parametro `values` a cui passare l'elenco dei nomi dei colori, es. `scale_color_manual(values=c("gray70","red"))`; il primo valore corrisponde al caso `FALSE` mentre il secondo al `TRUE`
+
+
+```{r esempio multi line, fig.width=3, fig.height=2}
+x = 1:50
+y = cos(x/30*pi) ## i valori di base sono un pezzo di coseno
+ds = data.frame(
+  cat = rep(c("Orig",1:9),each=50),   # originale + 10 repliche
+  x = rep(x,10),                      # replica 10 volte la x
+  y = c(y,rep(y,9)+rnorm(9*50,0,0.2)) # y e 9 repliche con valori casuali
+)
+ggplot(ds,aes(x=x,y=y,col=cat=="Orig",size=cat=="Orig",group=cat))+
+  geom_line()+
+  scale_size_manual(values=c(0.2,1),guide="none")+
+  scale_color_manual(values=c("grey70","tomato"),guide="none")+
+  theme_bw()
+```
+
+---
+
+
+Modificare il grafico precedente in modo da evidenziare con un colore diverso i dati relativi all'anno 2020.
+
+```{r, fig.width=6}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso == "tutti") %>%
+  ggplot(aes(x = as.integer(mese), y = disoccupazione, col=anno=="2020", size=anno=="2020", group = anno)) +
+  geom_line() +
+  scale_size_manual(values = c(1,1.5)) +
+  scale_color_manual(values = c("grey70", "blue")) +
+  ggtitle("Disoccupazione") +
+  ylab("") +
+  theme_minimal()
+  
+```
+
+
+Mostrare il confronto della distribuzione del tasso di attività di Maschi e Femmine tramite un boxplot.
+
+```{r}
+## DA COMPLETARE
+d_occupazione %>% filter(Sesso != "tutti") %>%
+  ggplot(aes(x = Sesso, y = attivita/100, fill = Sesso)) +
+  ggtitle("Tasso di attivita") +
+  ylab("") +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_manual(values = c("pink", "steelblue")) +
+  geom_boxplot() +
+  theme_minimal()
+```
+

@@ -1,0 +1,373 @@
+---
+title: "VIQ - Laboratorio 5"
+date: 2021-04-30
+output: html_notebook
+---
+
+### Obiettivi
+
+1.  Usare ggplot per creare grafici
+
+### Strumento
+
+R ed RStudio, in particolare la libreria ggplot (parte di tidyverse): 
+
+```{r import delle librerie,include=FALSE}
+library(tidyverse)
+```
+
+### Dataset
+
+Utilizziamo il dataset pubblico sui dati ISTAT con periodo di riferimento GENNAIO-FEBBRAIO 2021, pubblicati in data 06 APRILE 2021:
+
+https://www.istat.it/it/archivio/256254
+
+Usiamo il dataframe ripulito secondo le indicazioni dello scorso laboratorio.
+Il file `TidyIstat.R` contiene il codice per scaricare e ripulire i dati, che vengono salvati in `istat_occupazione.RDS` (formato compresso di R) che può essere letto tramite il metodo `read_rds()`.
+
+```{r leggi dati, }
+istat <- read_rds("istat_occupazione.RDS")
+istat
+```
+
+- Mostrare l'andamento del tasso di disosccupazione di Femmine, Maschi, e Generale. 
+  - Usare prima dei punti colorati in modo diverso:
+
+```{r}
+## DA COMPLETARE
+istat %>% 
+  ggplot(aes(x=data, y=disoccupazione, color=Sesso)) +
+  geom_point()
+```
+
+  - e poi usare delle linee:
+
+```{r}
+## DA COMPLETARE
+istat %>% 
+  ggplot(aes(x=data, y=disoccupazione, color=Sesso)) +
+  geom_line()
+```
+
+  - Riflessione: quale dei due tipi di layer è più adatto?
+
+## Scale 
+
+La visualizzazione può essere personalizzata prima di tutto tramite delle opportune scale che fanno corrispondere i valori delle variabili a delle diverse caratteristiche visuali.
+
+### Scala colore
+
+- Modificare il diagramma a linee precedente in modo che i colori utilizzati per Donne, Uomini e Generale siano rispettivamente rosa, blu e grigio (`pink`,`skyblue`, `gray50`).
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso, shape = Sesso)) +
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = c("pink", "skyblue", "gray50"))
+```
+
+### Altre scale
+
+È possibile utilizzare delle scale per qualsiasi aspetto estetico, ad esempio per `geom_line()` è possibile specificare l'estetica `linetype` per il tipo di linea:
+
+```{r tipi di linea, fig.width=3, fig.height=3, echo=FALSE}
+ggplot(data.frame(y=factor(1:6),x=0),aes(x,y))+
+  geom_text(aes(label=y),vjust=0,size=6)+
+  geom_hline(yintercept=1:6,linetype=1:6)+
+  theme_void()
+```
+
+- Modificare il grafico del punto precedente in modo che i valori per Maschi e Femmine siano a tratto continuo, mentre quelli Generali siano a punto e linea.
+
+  - Suggerimento: si utilizzi la funzione `scale_linetype_manual()`.
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso, linetype = Sesso)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1, 1, 4)) +
+  scale_color_manual(values = c("pink", "skyblue", "gray50"))
+  
+```
+
+### Scala posizione
+
+La scala verticale rappresenta dei tassi (<1) che potrebbero essere rappresentati meglio come percentuali. È possibile utilizzare la funzione `scale_y_continuous()` per specificare come
+stampare le etichette. In particolare è possibile utilizzare il parametro `labels` a cui passare una funzione che
+- prende i valori corrispondenti alle etichette 
+- resituisce l'etichetta (ad es. 0.12 dovrebbe diventare "12%")
+
+
+- Modificare il grafico precedente in modo da stampare correttamente le percentuali sull'asse y.
+
+  - Suggerimento: è possibile scrivere esplicitamente la funzione oppure usare `scales::percent` che è una funzione già definita.
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent)
+```
+
+## Direct labeling
+
+- Rimuovere la legenda e sostituirla con un direct labeling.
+  - Suggerimento: per rimuovere la legenda legata ad una scale, usare `guide="none"` nella funzione di scala
+  - Suggerimento: per allineare il testo alla destra dell'estremo destro delle linee, è possibile usare il parametro `hjust=0`, ed il parametro `nudge_x` per distanziarlo ulteriormente.
+
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso, linetype = Sesso)) +
+  geom_line() +
+  geom_text(aes(label = Sesso), data = subset(istat, data == tail(istat$data, n=1)), color = "red", hjust = 0) +
+  scale_color_manual(values = c("pink", "skyblue", "gray50"), guide = "none") +
+  scale_linetype_manual(values = c(1, 1, 4), guide = "none") +
+  scale_y_continuous(labels = scales::percent)
+
+estremo <- istat %>% filter(data == max(data))
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso, linetype = Sesso)) +
+  geom_line() +
+  scale_color_manual(values = c("pink", "skyblue", "gray50"), guide = "none") +
+  scale_linetype_manual(values = c(1, 1, 4), guide = "none") +
+  scale_y_continuous(breaks = c(0.05, 0.075, 0.1, 0.125), labels = scales::percent) +
+  geom_text(aes(label = Sesso), data = estremo, hjust = 0, nudge_x = 100)
+
+istat %>%
+  ggplot(aes(x = data, y = disoccupazione, color = Sesso, linetype = Sesso)) +
+  geom_line() +
+  scale_color_manual(values = c("pink", "skyblue", "gray50"), guide = "none") +
+  scale_linetype_manual(values = c(1, 1, 4), guide = "none") +
+  scale_y_continuous(breaks = c(0.05, 0.075, 0.1, 0.125), labels = scales::percent) +
+  geom_point(data = estremo) +
+  geom_text(aes(label = Sesso), data = estremo, hjust = "center", vjust = "bottom", nudge_y = 0.001) +
+  ylab("") +
+  ggtitle("Andamento del tasso di disoccupazione") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+## Serie multiple
+
+- Mostrare l'andamento del tasso di disoccupazione generale e quello giovanile
+
+  - Suggerimento: per lasciare spazio sufficiente all'etichetta è possibile usare il parametro `expand` della funzione di scale che riceve il risultato della funzione `expansion()` (si veda Help per ulteriori indicazioni).
+
+```{r}
+## DA COMPLETARE
+istat_long <- istat %>%  pivot_longer(cols = c("disoccupazione", "disoccupazione.giovani"), names_to = "type", values_to = "values") %>% filter(Sesso == "MF") %>% mutate(type = as.factor(type)) %>% mutate(type = fct_recode(type, generale = "disoccupazione", giovanile = "disoccupazione.giovani"))
+
+istat_long
+istat_long %>%
+  ggplot(aes(x=data, y=values, color = type)) +
+  geom_line() +
+  geom_text(aes(label = type), data = subset(istat_long, data == tail(istat$data, n=1)), color = "red", hjust = 0, nudge_x=100) +
+  scale_y_continuous(labels = scales::percent) +
+  #scale_x_continuous(expand = expansion(mult = c(0, .35))) +
+  scale_x_continuous(expand = expansion(mult = c(0, .12))) +
+  scale_color_manual(values = c("blue", "green"), guide = "none")
+
+istat_right <- istat_long %>% filter(data == max(data))
+
+istat_long %>%
+  ggplot(aes(x=data, y=values, color = type)) +
+  geom_line() +
+  geom_text(aes(label = type), data = istat_right, color = "red", hjust = 0, nudge_x=100) +
+  scale_y_continuous(labels = scales::percent) +
+  #scale_x_continuous(expand = expansion(mult = c(0, .35))) +
+  scale_x_continuous(expand = expansion(mult = c(0, .12))) +
+  scale_color_manual(values = c("blue", "green"), guide = "none")
+```
+
+
+## Annotazioni
+
+- Modificare il grafico precedente in modo da mostrare il valore massimo, il valore minimo ed il valore finale (assieme alla *direct label*) di ciascuna serie.
+
+```{r}
+## DA COMPLETARE
+max_d <- istat_long %>% group_by(type) %>% filter(values == max(values)) 
+min_d <- istat_long %>% group_by(type) %>% filter(values == min(values))
+
+istat_long %>%
+  ggplot(aes(x=data, y=values, color = type)) +
+  geom_line() +
+  geom_text(aes(label = type), data = istat_right, color = "red", hjust = 0, nudge_x=100) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(expand = expansion(mult = c(0, .12))) +
+  scale_color_manual(values = c("blue", "green"), guide = "none") +
+  
+  geom_point(data = max_d, shape = 2) +
+  geom_text(aes(label = paste0(round(values*100,2),"%\n(", mese, " ", anno, ")")), data = max_d, colour = "black", vjust = 0, hjust = 0.5, nudge_y = 0.01, size = 2) +
+  
+  geom_point(data = min_d, shape = 2) +
+  geom_text(aes(label = paste0(round(values*100,2),"%\n(", mese, " ", anno, ")")), data = min_d, colour = "black", vjust = "bottom", hjust = 0.5, nudge_y = -0.025, size = 2) 
+ 
+```
+
+## Aprossimazioni
+
+* Scrivere una funzione che dato un vettore `v` di numeri ed un intero `n`, produca un vettore (di pari lunghezza) contenente la media mobile su `n` elementi. 
+Visto che la media mobile non è definita per i primi $n/2$ elementi, il risultato deve contenere $\lfloor{(n-1)/2}\rfloor$ valori `NA` in testa e $\lfloor{n/2}\rfloor$ `NA` in coda.
+
+------------------ ---- --- ------- ------- --- --- ------- ------- ------- ----
+ **v**              2    5     2       6     6   6     3       4       1     6  
+
+ **media mobile**   NA   3   4.333   4.667   6   5   4.333   2.667   3.667   NA 
+------------------ ---- --- ------- ------- --- --- ------- ------- ------- ----
+
+```{r}
+## DA COMPLETARE
+media_mobile <- function(v, n){
+  sum <- 0
+  med <- 0
+  nn <- floor(n/2)
+  for (i in 1:length(v)){
+    if(i <= nn | i > (length(v) - nn)){
+      med[i] <- NA
+    }
+    else{
+      sum <- 0
+      for (j in 0:(n-1)){
+        sum <- sum + v[i - nn + j]
+      }
+      med[i] <- sum/n
+    }
+  }
+  return (med)
+}
+
+```
+
+```{r}
+vector <- c(2,5,2,6,6,6,3,4,1,6)
+print (media_mobile(vector, 3))
+```
+
+
+- Rappresentare l'andamento della disoccupazione giovanile con aggiunta la media mobile a tre mesi.
+
+```{r}
+## DA COMPLETARE
+istat_med_mob <- istat %>% filter(Sesso == "MF")
+istat_med_mob$med_mob <- media_mobile(istat_med_mob$disoccupazione.giovani, 3)
+
+istat_med_mob
+
+istat_med_mob %>%
+  pivot_longer(cols = c("disoccupazione.giovani", "med_mob"), names_to = "type", values_to = "values") %>%
+  ggplot(aes(x = data, y = values, color = type)) +
+  geom_line() +
+  scale_color_manual(values = c("red", "black")) +
+  scale_y_continuous(labels = scales::percent)
+  
+```
+
+- Rappresentare l'andamento della disoccupazione giovanile con aggiunta l'interpolazione LOESS, tramite la funzione `geom_smooth()`.
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  filter(Sesso == "MF") %>%
+  ggplot(aes(x = data, y = disoccupazione.giovani)) +
+  geom_line() +
+  scale_y_continuous(labels = scales::percent) +
+  geom_smooth(method = loess, formula = y ~ x)
+```
+
+
+## Valori derivati
+
+Dalla [nota metodologica ISTAT](https://www.istat.it/it/files//2021/04/CS_Occupati_disoccupati_FEBBRAIO_2021.pdf) sappiamo che
+
+- Occupati: persone (15-89 anni) che hanno lavorato o sono in permesso
+- Disoccupati: persone (15-74 anni) che sono in cerca di lavoro
+- Popolazione: persone nella fascia d'età considerata
+- Attivi: Occupati + Disoccupati
+
+Il tasso di attività è dato da:
+
+$$t_A = \frac{Attivi}{Popolazione}$$
+
+Il tasso di occupazione è dato da:
+
+$$t_O = \frac{Occupati}{Popolazione}$$
+
+Il tasso di disoccupazione è dato da:
+
+$$t_D = \frac{Disoccupati}{Attivi}$$
+
+A partire dai valori precedenti definiti e forniti dall'ISTAT quindi possiamo calcolare:
+
+La proporzione di disoccupati sulla popolazione totale:
+
+$$p_D = \frac{Disoccupati}{Popolazione} = t_D \cdot t_A$$
+
+La proporzione di inattivi (non attivi) sulla popolazione totale.
+
+$$p_I = \frac{Inattivi}{Popolazione} = 1 - t_A$$
+
+Le proporzione di riferimento per Occupati e Disoccupati non sono esattamente le stesse, ma la differenza è minima, perciò abbiamo:
+
+$$ p_D + t_O + p_I \approx 1 $$
+
+- Verificare che la distribuzione della somma tra Tasso di Occupazione, Proporzione di Disoccupati e Proporzione Inattivi sia circa 1 (usando un boxplot) per M, F e MF.
+
+```{r}
+## DA COMPLETARE
+calcolo_somma <- function(ta, to, td){
+  pd <- td*ta
+  pi <- 1-ta
+  return (pd + to + pi)
+}
+
+```
+
+```{r}
+istat$somma <- calcolo_somma(istat$attivita, istat$occupazione, istat$disoccupazione)
+istat %>%
+  ggplot(aes(x = Sesso, y = somma, fill = Sesso)) +
+  geom_boxplot() +
+  theme_minimal()
+```
+
+
+**Riflessione** lo scostamento è dovuto alla non esatta corrispondenza tra le popolazioni, in particolare è tanto più ampio quando più c'è una parte di occupati nella popolazione tra 74 e 89 anni.
+
+- Modificare il diagramma precedente usando un violin plot sopra il quale riportare i punti relativi ai singoli valori.
+  - usare il parametro `position="jitter"` per sparpagliare in maniera casuale i punti, evitando così di averli tutti allineati e sovrapposti.
+
+```{r}
+## DA COMPLETARE
+istat %>%
+  ggplot(aes(x = somma, y = Sesso, fill = Sesso)) +
+  geom_violin(alpha = 0.7) +
+  scale_fill_manual(values = c("pink", "skyblue", "grey60"), guide = "none") +
+  geom_point(aes(colour = Sesso), position = position_jitter(width = 0.1, height = 0.2), size = 1) +
+  scale_x_continuous(labels = scales::percent) 
+```
+
+
+- Mostrare con un diagramma ad area l'andamento delle tre componenti della somma nel corso del periodo di osservazione per la popolazione generale (MF).
+
+```{r, fig.height=10, fig.width=10}
+## DA COMPLETARE
+istat$prop_dis <- istat$attivita*istat$disoccupazione
+istat$prop_inatt <- 1 - istat$attivita
+colnames(istat)[colnames(istat) == "occupazione"] <- "prop_occupazione"
+
+istat %>%
+  filter(Sesso == "MF") %>%
+  select(data, Sesso, starts_with("prop_")) %>%
+  pivot_longer(starts_with("prop_"), names_to = "indicatore", values_to = "prop") %>%
+  mutate(indicatore = as.factor(indicatore)) %>%
+  ggplot(aes(x = data, y = prop, fill = indicatore)) +
+  geom_area() 
+```

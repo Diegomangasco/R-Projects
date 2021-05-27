@@ -1,0 +1,41 @@
+media_mobile <- function(v,n){
+  stopifnot(length(v)>=n)
+  res = rep(NA,floor((n-1)/2))
+  while(length(v) >= n){
+    res = c(res,mean(v[1:n]))
+    v=tail(v,-1)
+  }
+  res = c(res,rep(NA,floor(n/2)))
+  return( res )
+}
+
+covid_casi_data <- read_xlsx(fileiss,"casi_inizio_sintomi") %>% 
+             mutate(CASI = as.numeric(CASI)) %>% 
+             rename(SINTOMI = CASI) %>% 
+             inner_join(
+               read_xlsx(fileiss,"casi_prelievo_diagnosi")%>% 
+               mutate(CASI = as.numeric(CASI)) %>% 
+               rename(DIAGNOSI = CASI),
+               by =c("DATA_INIZIO_SINTOMI"="DATA_PRELIEVO_DIAGNOSI")
+             ) %>%
+            rename(Data = DATA_INIZIO_SINTOMI) %>% 
+            select(- starts_with("iss_date")) %>% 
+            mutate(Data = as.Date(Data,format="%d/%m/%Y")) %>% 
+            filter(! is.na(Data)) %>% 
+            pivot_longer(c("SINTOMI","DIAGNOSI"),names_to="Tipo",values_to="CASI") %>% 
+            group_by(Tipo) %>% arrange(Data) %>% 
+            mutate(CASI_MM=media_mobile(CASI,7)) %>% 
+            filter(!is.na(CASI_MM))
+
+ggplot(covid_casi_data,aes(x=Data,y=CASI_MM,color=Tipo,group=Tipo))+
+  geom_line()+
+  scale_color_brewer(type="qual",guide="none")+
+  geom_point(data=~.x %>% filter(Data==max(Data)))+
+  geom_text(aes(label=Tipo),data=~.x %>% filter(Data==max(Data)),
+            hjust="left",vjust="bottom",nudge_x = 3, show.legend = FALSE)+
+  geom_text(aes(label=round(CASI_MM)),data=~.x %>% filter(Data==max(Data)),
+            hjust="left",vjust="top",nudge_x = 3,nudge_y=-200,size=2,color="gray20")+
+  scale_x_date(expand=expansion(add=c(0,40)))+
+  ylab("Casi")+
+  ggtitle("Andamento dei casi","Per data di diagnosi o inizio sintomi, media mobile a 7gg")+
+  theme_minimal()

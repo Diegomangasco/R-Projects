@@ -1,0 +1,93 @@
+---
+title: "VIQ - Laboratorio 9"
+date: 2021-05-27
+output: html_document
+runtime: shiny
+---
+
+### Obiettivi
+
+1. Analisi di visualizzazione
+2. Redesign
+
+### Strumento
+
+RStudio, e le librerie ritenute utili.
+
+---
+
+## Tema d'esame
+
+Si consideri il seguente grafico preso da un [articolo di Vox (del 20 Agosto 2014)](http://www.vox.com/2014/8/20/6040435/als-ice-bucket-challenge-and-why-we-give-to-charity-donate).
+
+![](fundrasing4disease.jpg)
+
+L'articolo commenta il disallineamento tra l'attenzione mediatica con i relativi fondi raccolti pubblicamente e le cause di morte reali.
+
+---
+
+Analisi
+
+Analizzare il grafico sopra riportato secondo gli aspetti seguenti:
+
+### Question: c'è una domanda (o più di una) a cui la visualizzazione risponde? Scriverla con parole proprie.
+I soldi che investiamo nella ricerca medica per alcune malattie è proporzionato alle vittime che queste malattie fanno?
+
+
+### Data: i dati riportati sono validi e supportano la domanda? La qualità dei dati è appropriata? Indicare le caratteristiche non adeguate.
+
+Caratteristica      | Valutazione dell'adequatezza
+-------------------:|-------------------------------------------------
+Accuracy            |
+Completeness        | 
+Consistency         | 
+Currency            | 
+Credibility         | 
+Understandability   | 
+Precision           | 
+
+
+
+#### Visual Proportionality: le misure sono riportate in maniera uniformemente proporzionale?
+No, ci sono errori nelle proporzioni per quanto riguarda le aree dei cerchi
+
+#### Visual Utility: tutti gli elementi presenti nel grafico trasmettono informazioni utili?
+Le didascalie delle malattie nella legenda non danno informazioni utili
+
+#### Visual Clarity: i dati del grafico sono chiaramente identificabili e comprensibili (opportunamente descritti)?
+No, per i soldi viene indicato che sono milioni di dollari, mentre per le morti non si capisce se siano unità, decine, centinaia, migliaia, ecc... 
+
+## Design
+
+Riprogettare la visualizzazione in modo da risolvere i problemi evidenziati nell'analisi.
+
+```{r import delle librerie}
+library(tidyverse)
+library(dplyr)
+
+#Prima riga morti, seconda riga soldi
+
+morti <- c(596577000, 73831000, 6849000, 39518000, 7683000, 142942000, 21176000, 41374000)
+soldi <- c(54100000, 4200000, 22900000, 3200000, 14000000, 7000000, 147000000, 257850000)
+tipo <- c("Cardio", "Diabete", "Motoneurone", "Suicidio", "HIV_AIDS", "Polmoni", "Cancro_prostata", "Cancro_seno")
+tot_soldi = sum(soldi)
+soldi <- (soldi/tot_soldi)
+tot_morti <- sum(morti)
+morti <- (morti/tot_morti)
+
+data <- data.frame("tipo" = tipo,
+                   "morti" = morti,
+                   "soldi" = soldi)
+plot <- data %>%
+  pivot_longer(cols = c("morti", "soldi"), names_to = "fonte", values_to = "value") %>%
+  ggplot(aes(x = tipo, y = value, fill = fonte)) +
+  geom_bar(stat = "identity", position = position_dodge2()) +
+  ggtitle("Percentuali di deceduti e di spesa per le malattie") +
+  ylab("") +
+  xlab("") +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("skyblue", "purple")) 
+
+
+```
+
